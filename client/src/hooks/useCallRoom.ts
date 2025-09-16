@@ -37,6 +37,24 @@ export function useCallRoom() {
     }
   };
 
-  //TODO: Create method to join call room
+  const joinCallRoom = async (roomId: string) => {
+    try {
+      const callDoc = doc(db, "calls", roomId);
+      const docSnap = await getDoc(callDoc);
+
+      if (docSnap.exists()) {
+        setCallId(roomId);
+        console.log("Joined call room: ", roomId);
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.log("Failed to join call room: ", error);
+      return false;
+    }
+  };
+
+  return { callId, createCallRoom, joinCallRoom };
 };
 
