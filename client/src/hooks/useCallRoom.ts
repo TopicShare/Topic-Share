@@ -4,7 +4,8 @@ import { doc, setDoc, getDoc } from "firebase/firestore";
 
 
 /*
- * Custom hook to create a call room with a random callId
+ * Custom hook to create a call room with a random callId.
+ * Also includes a method to join and leave call room.
  */
 export function useCallRoom() {
   const [callId, setCallId] = useState<string| null>(null);
@@ -27,7 +28,11 @@ export function useCallRoom() {
       await setDoc(callDoc, {
         status: "waiting",
         createdAt: new Date(),
-        createdBy: "user1" // Temp identifyer
+        createdBy: "user1", // Temp identifyer
+        offer: null,
+        answer: null,
+        callerCandidates: [],
+        calleeCandidates: []
       });
       setCallId(newCallId);
       console.log("Call room created: ", newCallId);
@@ -42,19 +47,25 @@ export function useCallRoom() {
       const callDoc = doc(db, "calls", roomId);
       const docSnap = await getDoc(callDoc);
 
-      if (docSnap.exists()) {
-        setCallId(roomId);
-        console.log("Joined call room: ", roomId);
-        return true;
-      } else {
+      if (!docSnap.exists()) {
         return false;
       }
+      setCallId(roomId);
+      console.log("Joined call room: ", roomId);
+
+      return true;
+
     } catch (error) {
       console.log("Failed to join call room: ", error);
       return false;
     }
   };
 
-  return { callId, createCallRoom, joinCallRoom };
+  const leaveCallRoom = (): void => {
+    setCallId(null);
+    // Maybe set error here?
+  };
+
+  return { callId, createCallRoom, joinCallRoom, leaveCallRoom };
 };
 
