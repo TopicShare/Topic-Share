@@ -7,6 +7,7 @@ export function useMediaAccess() {
   // State management for MediaStream and errors
   const [localStream, setLocalStream] = useState<MediaStream>();
   const [error, setError] = useState<string | null>(null);
+  const [loading, isLoading] = useState<boolean>(false);
 
   // TODO: Include additional error handling
 
@@ -26,5 +27,11 @@ export function useMediaAccess() {
       }
     }
   }
-  return { openMediaDevices, localStream, error }
+  return {
+    openMediaDevices,
+    localStream,
+    error,
+    loading,
+    isLoading
+  }
 }
