@@ -24,3 +24,4 @@ firebase.ts
 *.njsproj
 *.sln
 *.sw?
+**/.DS_Store
