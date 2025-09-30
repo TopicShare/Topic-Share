@@ -2,6 +2,12 @@ import { useState, useRef, useEffect } from 'react';
 import { db } from '../firebase';
 import { doc, onSnapshot, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
 
+interface ICECanddiateData {
+  candidate: string;
+  sdpMLineIndex: number | null;
+  sdpMid: string | null;
+}
+
 export function useWebRTC(callId: string | null, localStream: MediaStream | undefined) {
   const [isConnected, setIsConnected] = useState(false);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -94,16 +100,14 @@ export function useWebRTC(callId: string | null, localStream: MediaStream | unde
       // Handle ICE candidates
       const remoteCandidatesField = isCallerRef.current ? 'calleeCandidates' : 'callerCandidates';
       const candidates = data[remoteCandidatesField] || [];
-      
-      candidates.forEach(async (candidateData: any) => {
+      for (const candidateData of candidates as ICECanddiateData[]) {
         if (pc.remoteDescription) {
           try {
             await pc.addIceCandidate(candidateData);
-          } catch (e) {
-            // Ignore duplicate candidates
+          } catch (error) {
           }
         }
-      });
+      }
     });
     
     unsubscribeRef.current = unsubscribe;
