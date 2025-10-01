@@ -9,7 +9,7 @@ export default defineConfig({
   base: "/Topic-Share/",
   resolve: {
     alias: {
-      "@": "./src",
+      "@": "/src",
         },
     },
 })
