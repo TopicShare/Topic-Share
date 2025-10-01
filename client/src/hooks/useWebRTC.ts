@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { db } from '../firebase';
+import { db } from '@/firebase';
 import { doc, onSnapshot, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
 
 interface ICECanddiateData {
