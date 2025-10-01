@@ -108,6 +108,16 @@ export function useWebRTC(callId: string | null, localStream: MediaStream | unde
           }
         }
       }
+      
+      candidates.forEach(async (candidateData: any) => {
+        if (pc.remoteDescription) {
+          try {
+            await pc.addIceCandidate(candidateData);
+          } catch (e) {
+            // Ignore duplicate candidates
+          }
+        }
+      });
     });
     
     unsubscribeRef.current = unsubscribe;
