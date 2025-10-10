@@ -2,116 +2,71 @@ import { useState, useEffect, useRef } from "react";
 import { useMediaAccess } from "../hooks/useMediaAccess";
 import { useCallRoom } from "../hooks/useCallRoom";
 import { useWebRTC } from "../hooks/useWebRTC";
-import { Header } from "./Header";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router";
 
 export function AudioCall() {
   const [joinId, setJoinId] = useState("");
-  const { localStream, openMediaDevices } = useMediaAccess();
+  //const { localStream, openMediaDevices } = useMediaAccess();
   const { callId, createCallRoom, joinCallRoom } = useCallRoom();
-  
-  const { startCall, endCall, isConnected, remoteStream } = useWebRTC(callId, localStream);
-  
-  // Auto-play remote audio
-  const audioRef = useRef<HTMLAudioElement>(null);
-  useEffect(() => {
-    if (audioRef.current && remoteStream) {
-      audioRef.current.srcObject = remoteStream;
-      audioRef.current.play();
-    }
-  }, [remoteStream]);
+  //const { startCall, endCall, isConnected, remoteStream } = useWebRTC(callId, localStream);
+  const navigate = useNavigate();
 
   const handleCreateRoom = async () => {
-    if (!localStream) await openMediaDevices();
     await createCallRoom();
-    await startCall();
   };
 
+  // TODO: When room is created, do not automatically redirect to call room
+
+  // Navigate when callId is set (after room creation)
+  useEffect(() => {
+    if (callId) {
+      navigate(`/callRoom/${callId}`);
+    }
+  }, [callId, navigate]);
+
+  const handleJoinRoom = () => {
+    if (joinId.length === 6) {
+      navigate(`/callRoom/${joinId}`);
+    }
+  };
+
+  /*
   const handleJoinRoom = async () => {
     if (!localStream) await openMediaDevices();
     const success = await joinCallRoom(joinId);
+    navigate(`/callRoom/${callId}`);
     if (success) await startCall();
   };
+  */
 
   return (
-    <div className="flex flex-col gap-4 max-w-md mx-auto p-6">
-      <Header />
-
-      {/* Status */}
-      <div className="text-center bg-gray-800 rounded p-4">
-        <p>Status: {isConnected ? "Connected!" : "Waiting..."}</p>
-        {callId && (
-          <button 
-            onClick={() => navigator.clipboard.writeText(callId)}
-            className="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-sm mt-2 transition-colors"
-          >
-            📋 Copy Room ID: {callId}
-          </button>
-        )}
-      </div>
-
-      {/* Microphone */}
-      <button
-        onClick={openMediaDevices}
-        className={`px-4 py-2 rounded ${
-          localStream ? "bg-green-600" : "bg-blue-600"
-        } text-white`}
-      >
-        {localStream ? "✓ Microphone Ready" : "Enable Microphone"}
-      </button>
-
+    <div className="flex flex-col gap-4 max-w-md mx-auto  p-6 border-1 border-red-300">
       {/* Create Room */}
-      <button
+      <Button
         onClick={handleCreateRoom}
-        disabled={!localStream}
-        className="px-4 py-2 bg-green-600 text-white rounded disabled:bg-gray-500"
+        variant="default"
+        className="w-36 mx-auto"
       >
         Create New Room
-      </button>
+      </Button>
 
       {/* Join Room */}
-      <div className="space-y-2">
+      <div className="space-y-2 flex flex-col items-center">
         <input
           value={joinId}
           onChange={(e) => setJoinId(e.target.value.toUpperCase())}
           placeholder="Enter Room ID"
           maxLength={6}
-          className="w-full px-3 py-2 bg-gray-800 rounded"
+          className="w-36 px-3 py-2 bg-accent border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
         />
-        <button
+        <Button
           onClick={handleJoinRoom}
-          disabled={!localStream || !joinId.trim()}
-          className="w-full px-4 py-2 bg-purple-600 text-white rounded disabled:bg-gray-500"
         >
           Join Room
-        </button>
+        </Button>
       </div>
 
-      {/* Start Call (for room creator) */}
-      {callId && !isConnected && (
-        <button
-          onClick={startCall}
-          className="px-4 py-2 bg-orange-600 text-white rounded"
-        >
-          Start Call
-        </button>
-      )}
-
-      {/* End Call */}
-      {isConnected && (
-        <button
-          onClick={endCall}
-          className="px-4 py-2 bg-red-600 text-white rounded"
-        >
-          End Call
-        </button>
-      )}
-
-      {/* Hidden audio element for remote stream */}
-      <audio ref={audioRef} autoPlay playsInline className="hidden" />
-      
-      {remoteStream && (
-        <p className="text-green-400 text-center">Remote Audio Playing</p>
-      )}
     </div>
   );
 }
