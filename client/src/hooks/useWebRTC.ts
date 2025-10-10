@@ -100,14 +100,6 @@ export function useWebRTC(callId: string | null, localStream: MediaStream | unde
       // Handle ICE candidates
       const remoteCandidatesField = isCallerRef.current ? 'calleeCandidates' : 'callerCandidates';
       const candidates = data[remoteCandidatesField] || [];
-      for (const candidateData of candidates as ICECanddiateData[]) {
-        if (pc.remoteDescription) {
-          try {
-            await pc.addIceCandidate(candidateData);
-          } catch (error) {
-          }
-        }
-      }
       
       candidates.forEach(async (candidateData: any) => {
         if (pc.remoteDescription) {

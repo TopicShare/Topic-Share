@@ -2,7 +2,6 @@ import { useState } from "react";
 import { db } from "../firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 
-
 /*
  * Custom hook to create a call room with a random callId.
  * Also includes a method to join and leave call room.
