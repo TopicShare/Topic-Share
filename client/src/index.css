@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@layer theme, base, mantine, components, utilities;
+@import '@mantine/core/styles.layer.css';
 
 @custom-variant dark (&:is(.dark *));
 

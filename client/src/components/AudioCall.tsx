@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useMediaAccess } from "../hooks/useMediaAccess";
 import { useCallRoom } from "../hooks/useCallRoom";
 import { useWebRTC } from "../hooks/useWebRTC";
-import { Button } from "@/components/ui/button";
+import { Button } from "@mantine/core";
 import { useNavigate } from "react-router";
 
 export function AudioCall() {
@@ -15,6 +15,10 @@ export function AudioCall() {
   const handleCreateRoom = async () => {
     await createCallRoom();
   };
+
+  // TODO: Add name input for user's display name as a form
+  // Pass name as a query param when nagivating to /callRoom/:callId (e.g. ?name=John)
+  // Store name in local state
 
   // TODO: When room is created, do not automatically redirect to call room
 
@@ -41,12 +45,15 @@ export function AudioCall() {
   */
 
   return (
-    <div className="flex flex-col gap-4 max-w-md mx-auto  p-6 border-1 border-red-300">
+    <div className="flex flex-col gap-4 max-w-md mx-auto p-6">
       {/* Create Room */}
       <Button
         onClick={handleCreateRoom}
-        variant="default"
-        className="w-36 mx-auto"
+        variant="filled"
+        size="sm"
+        radius="lg"
+        w={{ base: "100%", sm: 160}}
+        mx="auto"
       >
         Create New Room
       </Button>
@@ -62,6 +69,9 @@ export function AudioCall() {
         />
         <Button
           onClick={handleJoinRoom}
+          size="sm"
+          radius="lg"
+          mx="auto"
         >
           Join Room
         </Button>

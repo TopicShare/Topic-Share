@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useWebRTC } from "../hooks/useWebRTC";
 import { useMediaAccess } from "../hooks/useMediaAccess";
 import { useParams } from "react-router";
-import { Button } from "./ui/button";
+import { Button } from "@mantine/core";
 
 export function CallRoom() {
   const { localStream, openMediaDevices } = useMediaAccess();
@@ -30,6 +30,7 @@ export function CallRoom() {
 
   return (
     <div className="flex flex-col gap-4 max-w-md mx-auto  p-6 border-1 border-red-300">
+      
       {/* Status */}
       <div className="text-center bg-gray-800 rounded p-4">
         <p>Status: {isConnected ? "Connected!" : "Waiting..."}</p>
