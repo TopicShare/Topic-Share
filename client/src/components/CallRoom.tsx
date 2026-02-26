@@ -2,12 +2,15 @@ import { useEffect, useRef } from "react";
 import { useWebRTC } from "../hooks/useWebRTC";
 import { useMediaAccess } from "../hooks/useMediaAccess";
 import { useParams } from "react-router";
-import { Button } from "@mantine/core";
+import { Center, Card, Stack, Button } from "@mantine/core";
 
 export function CallRoom() {
   const { localStream, openMediaDevices } = useMediaAccess();
   const { callId } = useParams();
-  const { startCall, endCall, isConnected, remoteStream } = useWebRTC(callId, localStream);
+  const { startCall, endCall, isConnected, remoteStream } = useWebRTC(
+    callId,
+    localStream,
+  );
 
   useEffect(() => {
     openMediaDevices();
@@ -15,7 +18,7 @@ export function CallRoom() {
 
   useEffect(() => {
     if (callId && localStream) {
-      startCall()
+      startCall();
     }
   }, [callId, localStream]);
 
@@ -29,38 +32,36 @@ export function CallRoom() {
   }, [remoteStream]);
 
   return (
-    <div className="flex flex-col gap-4 max-w-md mx-auto  p-6 border-1 border-red-300">
-      
-      {/* Status */}
-      <div className="text-center bg-gray-800 rounded p-4">
+    <Center >
+      <Card shadow="sm" padding="xl" radius="md" w={{ base: "90%", sm: 380 }}>
+        {/* Status */}
         <p>Status: {isConnected ? "Connected!" : "Waiting..."}</p>
         {callId && (
-          <Button 
+          <Button
             variant="secondary"
             onClick={() => navigator.clipboard.writeText(callId)}
           >
             📋 Copy Room ID: {callId}
           </Button>
         )}
-      </div>
 
-      {/* End Call */}
-      {isConnected && (
-        <button
-          onClick={endCall}
-          className="px-4 py-2 bg-red-600 text-white rounded"
-        >
-          End Call
-        </button>
-      )}
+        {/* End Call */}
+        {isConnected && (
+          <button
+            onClick={endCall}
+            className="px-4 py-2 bg-red-600 text-white rounded"
+          >
+            End Call
+          </button>
+        )}
 
-      {/* Hidden audio element for remote stream */}
-      <audio ref={audioRef} autoPlay playsInline className="hidden" />
-      
-      {remoteStream && (
-        <p className="text-green-400 text-center">Remote Audio Playing</p>
-      )}
+        {/* Hidden audio element for remote stream */}
+        <audio ref={audioRef} autoPlay playsInline className="hidden" />
 
-    </div>
-  )
+        {remoteStream && (
+          <p className="text-green-400 text-center">Remote Audio Playing</p>
+        )}
+      </Card>
+    </Center>
+  );
 }

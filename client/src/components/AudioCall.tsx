@@ -2,19 +2,27 @@ import { useState, useEffect, useRef } from "react";
 import { useMediaAccess } from "../hooks/useMediaAccess";
 import { useCallRoom } from "../hooks/useCallRoom";
 import { useWebRTC } from "../hooks/useWebRTC";
-import { Button } from "@mantine/core";
+import { Center, Card, Stack, Title, Divider, Button, Text, TextInput } from "@mantine/core";
+import { useForm } from "@mantine/form";
 import { useNavigate } from "react-router";
 
 export function AudioCall() {
-  const [joinId, setJoinId] = useState("");
   //const { localStream, openMediaDevices } = useMediaAccess();
   const { callId, createCallRoom, joinCallRoom } = useCallRoom();
   //const { startCall, endCall, isConnected, remoteStream } = useWebRTC(callId, localStream);
   const navigate = useNavigate();
+  const [ checking, setChecking ] = useState(false);
 
   const handleCreateRoom = async () => {
     await createCallRoom();
   };
+
+  const form = useForm({
+    initialValues: { roomId: "" },
+    validate: {
+      roomId: (value) => value.length !== 6 ? "Room ID must be 6 characters": null
+    }
+  });
 
   // TODO: Add name input for user's display name as a form
   // Pass name as a query param when nagivating to /callRoom/:callId (e.g. ?name=John)
@@ -29,9 +37,14 @@ export function AudioCall() {
     }
   }, [callId, navigate]);
 
-  const handleJoinRoom = () => {
-    if (joinId.length === 6) {
-      navigate(`/callRoom/${joinId}`);
+  const handleJoinRoom = async (values: { roomId: string}) => {
+    setChecking(true);
+    const success = await joinCallRoom(values.roomId);
+    setChecking(false);
+    if (success) {
+      navigate(`/callRoom/${values.roomId}`);
+    } else {
+      form.setFieldError("roomId", "Room not found");
     }
   };
 
@@ -44,39 +57,55 @@ export function AudioCall() {
   };
   */
 
-  return (
-    <div className="flex flex-col gap-4 max-w-md mx-auto p-6">
-      {/* Create Room */}
-      <Button
-        onClick={handleCreateRoom}
-        variant="filled"
-        size="sm"
-        radius="lg"
-        w={{ base: "100%", sm: 160}}
-        mx="auto"
+return (
+  <Center className="min-h-screen" style={{ background: "#1e2535" }}>
+    <Card shadow="sm" padding="xl" radius="lg" w={{ base: "90%", sm: 380 }}
+      style={{
+        background: "#1e2535", border: "none",
+        boxShadow: "6px 6px 16px rgba(0,0,0,0.5), -4px -4px 12px rgba(255,255,255,0.06)"
+      }}
       >
-        Create New Room
-      </Button>
+      <form onSubmit={form.onSubmit(handleJoinRoom)}>
+        <Stack gap="md">
 
-      {/* Join Room */}
-      <div className="space-y-2 flex flex-col items-center">
-        <input
-          value={joinId}
-          onChange={(e) => setJoinId(e.target.value.toUpperCase())}
-          placeholder="Enter Room ID"
-          maxLength={6}
-          className="w-36 px-3 py-2 bg-accent border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-        <Button
-          onClick={handleJoinRoom}
-          size="sm"
-          radius="lg"
-          mx="auto"
-        >
-          Join Room
-        </Button>
-      </div>
+          {/* Header */}
+          <Title order={2} ta="center">Topic Share</Title>
+          <Text c="dimmed" size="sm" ta="center">
+            Talk anonymously with someone who gets it.
+          </Text>
 
-    </div>
-  );
+          {/* Create Room */}
+          <Button
+            onClick={handleCreateRoom}
+            variant="filled"
+            size="sm"
+            radius="lg"
+            fullWidth
+          >
+            Create New Room
+          </Button>
+
+          <Divider label="or" labelPosition="center" />
+
+          {/* Join Room */}
+          <TextInput
+            placeholder="Enter Room ID"
+            maxLength={6}
+            {...form.getInputProps("roomId")}
+            onChange={(e) => form.setFieldValue("roomId", e.target.value.toUpperCase())}
+          />
+          <Button
+            type="submit"
+            size="sm"
+            radius="lg"
+            fullWidth
+          >
+            Join Room
+          </Button>
+
+        </Stack>
+      </form>
+    </Card>
+  </Center>
+);
 }

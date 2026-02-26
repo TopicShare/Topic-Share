@@ -7,7 +7,7 @@ import { doc, setDoc, getDoc } from "firebase/firestore";
  * Also includes a method to join and leave call room.
  */
 export function useCallRoom() {
-  const [callId, setCallId] = useState<string| null>(null);
+  const [ callId, setCallId] = useState<string| null>(null);
 
   // Generate random 6 char callId
   const generateCallId = () => {
@@ -17,6 +17,12 @@ export function useCallRoom() {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
+  };
+
+  const checkRoomExists = async (roomId: string): Promise<boolean> => {
+    const docRef = doc(db, "calls", roomId);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists();
   };
 
   const createCallRoom = async () => {
