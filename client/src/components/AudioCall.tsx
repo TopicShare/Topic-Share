@@ -7,9 +7,7 @@ import { useForm } from "@mantine/form";
 import { useNavigate } from "react-router";
 
 export function AudioCall() {
-  //const { localStream, openMediaDevices } = useMediaAccess();
-  const { callId, createCallRoom, joinCallRoom } = useCallRoom();
-  //const { startCall, endCall, isConnected, remoteStream } = useWebRTC(callId, localStream);
+  const { callId, createCallRoom, joinCallRoom, endCall } = useCallRoom();
   const navigate = useNavigate();
   const [ checking, setChecking ] = useState(false);
 
@@ -47,15 +45,6 @@ export function AudioCall() {
       form.setFieldError("roomId", "Room not found");
     }
   };
-
-  /*
-  const handleJoinRoom = async () => {
-    if (!localStream) await openMediaDevices();
-    const success = await joinCallRoom(joinId);
-    navigate(`/callRoom/${callId}`);
-    if (success) await startCall();
-  };
-  */
 
 return (
   <Center className="min-h-screen" style={{ background: "#1e2535" }}>

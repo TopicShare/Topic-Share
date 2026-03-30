@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { db } from '@/firebase';
 import { doc, onSnapshot, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
+import { useNavigate } from 'react-router';
 
 interface ICECanddiateData {
   candidate: string;
@@ -10,7 +11,9 @@ interface ICECanddiateData {
 
 export function useWebRTC(callId: string | null, localStream: MediaStream | undefined) {
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionState, setConnectionState] = useState<RTCPeerConnectionState | 'new'>('new');
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [remoteMuted, setRemoteMuted] = useState(false);
   
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const isCallerRef = useRef(false);
@@ -18,19 +21,29 @@ export function useWebRTC(callId: string | null, localStream: MediaStream | unde
   
   const startCall = async () => {
     if (!callId || !localStream) return;
-    
-    // Create peer connection
-    const pc = new RTCPeerConnection({
+    if (pcRef.current) return; // guard against double-invocation (React StrictMode)
+  
+
+  const servers = {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-      ]
-    });
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        //{ urls: "stun.cloudflare.com" },
+        //{ urls: "turn:turn.cloudflare.com:3478?transport=udp"},
+        //{ urls: "turn:turn.cloudflare.com:3478?transport=tcp"}
+      ],
+      iceCandidatePoolSize: 10,
+    };
+
+    const pc = new RTCPeerConnection(servers);
     pcRef.current = pc;
-    
-    // Add local stream
-    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-    
+
+    localStream.getTracks().forEach((track) =>{
+      pc.addTrack(track, localStream)
+    });
+
     // Handle remote stream
     pc.ontrack = (event) => {
       console.log('Remote stream received:', event.streams[0]);
@@ -40,6 +53,7 @@ export function useWebRTC(callId: string | null, localStream: MediaStream | unde
     // Handle connection state
     pc.onconnectionstatechange = () => {
       console.log('Connection state:', pc.connectionState);
+      setConnectionState(pc.connectionState);
       setIsConnected(pc.connectionState === 'connected');
     };
     
@@ -91,12 +105,18 @@ export function useWebRTC(callId: string | null, localStream: MediaStream | unde
     const unsubscribe = onSnapshot(callDoc, async (snapshot) => {
       const data = snapshot.data();
       if (!data) return;
-      
+
       // Handle answer (caller only)
       if (isCallerRef.current && data.answer && !pc.remoteDescription) {
         await pc.setRemoteDescription(data.answer);
       }
       
+      // Handle remote mute state
+      const remoteMutedField = isCallerRef.current ? 'calleeMuted' : 'callerMuted';
+      if (data[remoteMutedField] !== undefined) {
+        setRemoteMuted(data[remoteMutedField]);
+      }
+
       // Handle ICE candidates
       const remoteCandidatesField = isCallerRef.current ? 'calleeCandidates' : 'callerCandidates';
       const candidates = data[remoteCandidatesField] || [];
@@ -111,14 +131,17 @@ export function useWebRTC(callId: string | null, localStream: MediaStream | unde
         }
       });
     });
-    
+
     unsubscribeRef.current = unsubscribe;
   };
   
   const endCall = () => {
     pcRef.current?.close();
+    pcRef.current = null;
     unsubscribeRef.current?.();
+    unsubscribeRef.current = null;
     setIsConnected(false);
+    setConnectionState('new');
     setRemoteStream(null);
   };
   
@@ -127,5 +150,11 @@ export function useWebRTC(callId: string | null, localStream: MediaStream | unde
     return () => endCall();
   }, [callId]);
   
-  return { startCall, endCall, isConnected, remoteStream };
+  const updateMuteState = async (muted: boolean) => {
+    if (!callId) return;
+    const field = isCallerRef.current ? 'callerMuted' : 'calleeMuted';
+    await updateDoc(doc(db, 'calls', callId), { [field]: muted });
+  };
+
+  return { startCall, endCall, isConnected, connectionState, remoteStream, remoteMuted, updateMuteState };
 }

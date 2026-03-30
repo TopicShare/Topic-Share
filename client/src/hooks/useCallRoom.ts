@@ -66,11 +66,12 @@ export function useCallRoom() {
     }
   };
 
-  const leaveCallRoom = (): void => {
+  //TODO: Create functionality for ending call
+  const endCall = (): void => {
     setCallId(null);
     // Maybe set error here?
   };
 
-  return { callId, createCallRoom, joinCallRoom, leaveCallRoom };
+  return { callId, createCallRoom, joinCallRoom, endCall };
 };
 
