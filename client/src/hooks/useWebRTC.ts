@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { db } from '@/firebase';
 import { doc, onSnapshot, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router';
+import { httpsCallable } from "firebase/functions"
+import { functions } from "@/firebase"
 
 interface ICECanddiateData {
   candidate: string;
@@ -22,22 +24,16 @@ export function useWebRTC(callId: string | null, localStream: MediaStream | unde
   const startCall = async () => {
     if (!callId || !localStream) return;
     if (pcRef.current) return; // guard against double-invocation (React StrictMode)
-  
+ 
+  const getTurnCredentials = httpsCallable<void, { iceServers: RTCIceServer[]}>(
+      functions, "getTurnCredentials"
+    );
+    const { data } = await getTurnCredentials();
+    const pc = new RTCPeerConnection({
+      iceServers: data.iceServers,
+      iceCandidatePoolSize: 10
+    });
 
-  const servers = {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        { urls: 'stun:stun3.l.google.com:19302' },
-        //{ urls: "stun.cloudflare.com" },
-        //{ urls: "turn:turn.cloudflare.com:3478?transport=udp"},
-        //{ urls: "turn:turn.cloudflare.com:3478?transport=tcp"}
-      ],
-      iceCandidatePoolSize: 10,
-    };
-
-    const pc = new RTCPeerConnection(servers);
     pcRef.current = pc;
 
     localStream.getTracks().forEach((track) =>{

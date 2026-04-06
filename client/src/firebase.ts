@@ -18,4 +18,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 //const analytics = getAnalytics(app);
 
-export { db }
+// Connect to local Functions emulator in development
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
+const functions = getFunctions(app);
+if (import.meta.env.DEV) {
+  connectFunctionsEmulator(functions, "127.0.0.1", 5001);
+}
+
+export { db, functions }
