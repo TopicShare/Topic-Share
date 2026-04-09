@@ -4,13 +4,13 @@ import { getAnalytics } from "firebase/analytics";
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBMrveVm1A-pELpEltOHmN5GHpiA-2jBKQ",
-  authDomain: "topic-share-e3a46.firebaseapp.com",
-  projectId: "topic-share-e3a46",
-  storageBucket: "topic-share-e3a46.firebasestorage.app",
-  messagingSenderId: "409924297116",
-  appId: "1:409924297116:web:69531b582090196ff66859",
-  measurementId: "G-R1RXQZWM30"
+  apiKey: "AIzaSyCmkGCVOcgxihgrxDAW4hSKureKHUxkW7M",
+  authDomain: "topic-share-28f8c.firebaseapp.com",
+  projectId: "topic-share-28f8c",
+  storageBucket: "topic-share-28f8c.firebasestorage.app",
+  messagingSenderId: "965604077811",
+  appId: "1:965604077811:web:42fe0bed93ae7423534786",
+  measurementId: "G-1V0WBWM4CB"
 };
 
 // Initialize Firebase
@@ -18,11 +18,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 //const analytics = getAnalytics(app);
 
-// Connect to local Functions emulator in development
-import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
+import { getFunctions } from "firebase/functions";
 const functions = getFunctions(app);
-if (import.meta.env.DEV) {
-  connectFunctionsEmulator(functions, "127.0.0.1", 5001);
-}
 
 export { db, functions }
