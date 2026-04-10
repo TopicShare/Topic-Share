@@ -1,16 +1,25 @@
-import { onCall } from "firebase-functions/v2/https";
+import { onRequest } from "firebase-functions/v2/https";
 import * as twilio from "twilio";
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 
-export const getTurnCredentials = onCall({ invoker: "public", cors: true }, async () => {
-  if (!accountSid || !authToken) {
-    throw new Error("Twilio credentials not configured");
+export const getTurnCredentials = onRequest({ cors: true, invoker: "public" }, async (req, res) => {
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
   }
 
-  const client = twilio.default(accountSid, authToken);
-  const token = await client.tokens.create({ ttl: 3600 });
+  if (!accountSid || !authToken) {
+    res.status(500).json({ error: "Twilio credentials not configured" });
+    return;
+  }
 
-  return { iceServers: token.iceServers };
+  try {
+    const client = twilio.default(accountSid, authToken);
+    const token = await client.tokens.create({ ttl: 3600 });
+    res.json({ iceServers: token.iceServers });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get TURN credentials" });
+  }
 });
