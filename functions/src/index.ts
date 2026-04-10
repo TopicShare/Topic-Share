@@ -4,7 +4,7 @@ import * as twilio from "twilio";
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 
-export const getTurnCredentials = onCall({ invoker: "public" }, async () => {
+export const getTurnCredentials = onCall({ invoker: "public", cors: true }, async () => {
   if (!accountSid || !authToken) {
     throw new Error("Twilio credentials not configured");
   }
