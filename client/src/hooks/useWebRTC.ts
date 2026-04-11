@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { db } from '@/firebase';
 import { doc, onSnapshot, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router';
-import { httpsCallable } from "firebase/functions"
-import { functions } from "@/firebase"
+const TURN_URL = import.meta.env.DEV
+  ? "http://127.0.0.1:5001/topic-share-28f8c/us-central1/getTurnCredentials"
+  : "https://us-central1-topic-share-28f8c.cloudfunctions.net/getTurnCredentials";
 
 interface ICECanddiateData {
   candidate: string;
@@ -25,12 +26,10 @@ export function useWebRTC(callId: string | null, localStream: MediaStream | unde
     if (!callId || !localStream) return;
     if (pcRef.current) return; // guard against double-invocation (React StrictMode)
  
-  const getTurnCredentials = httpsCallable<void, { iceServers: RTCIceServer[]}>(
-      functions, "getTurnCredentials"
-    );
-    const { data } = await getTurnCredentials();
+  const res = await fetch(TURN_URL, { method: "POST" });
+    const { iceServers } = await res.json();
     const pc = new RTCPeerConnection({
-      iceServers: data.iceServers,
+      iceServers,
       iceCandidatePoolSize: 10
     });
 
