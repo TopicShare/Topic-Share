@@ -2,13 +2,12 @@ import { useState } from "react";
 import { db } from "../firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 
-
 /*
  * Custom hook to create a call room with a random callId.
  * Also includes a method to join and leave call room.
  */
 export function useCallRoom() {
-  const [callId, setCallId] = useState<string| null>(null);
+  const [ callId, setCallId] = useState<string| null>(null);
 
   // Generate random 6 char callId
   const generateCallId = () => {
@@ -18,6 +17,12 @@ export function useCallRoom() {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
+  };
+
+  const checkRoomExists = async (roomId: string): Promise<boolean> => {
+    const docRef = doc(db, "calls", roomId);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists();
   };
 
   const createCallRoom = async () => {
@@ -61,11 +66,12 @@ export function useCallRoom() {
     }
   };
 
-  const leaveCallRoom = (): void => {
+  //TODO: Create functionality for ending call
+  const endCall = (): void => {
     setCallId(null);
     // Maybe set error here?
   };
 
-  return { callId, createCallRoom, joinCallRoom, leaveCallRoom };
+  return { callId, createCallRoom, joinCallRoom, endCall };
 };
 

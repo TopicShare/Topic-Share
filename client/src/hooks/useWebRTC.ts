@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { db } from '../firebase';
+import { db } from '@/firebase';
 import { doc, onSnapshot, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
+import { useNavigate } from 'react-router';
+const TURN_URL = import.meta.env.DEV
+  ? "http://127.0.0.1:5001/topic-share-28f8c/us-central1/getTurnCredentials"
+  : "https://us-central1-topic-share-28f8c.cloudfunctions.net/getTurnCredentials";
 
 interface ICECanddiateData {
   candidate: string;
@@ -10,7 +14,9 @@ interface ICECanddiateData {
 
 export function useWebRTC(callId: string | null, localStream: MediaStream | undefined) {
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionState, setConnectionState] = useState<RTCPeerConnectionState | 'new'>('new');
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [remoteMuted, setRemoteMuted] = useState(false);
   
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const isCallerRef = useRef(false);
@@ -18,19 +24,21 @@ export function useWebRTC(callId: string | null, localStream: MediaStream | unde
   
   const startCall = async () => {
     if (!callId || !localStream) return;
-    
-    // Create peer connection
+    if (pcRef.current) return; // guard against double-invocation (React StrictMode)
+ 
+  const res = await fetch(TURN_URL, { method: "POST" });
+    const { iceServers } = await res.json();
     const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-      ]
+      iceServers,
+      iceCandidatePoolSize: 10
     });
+
     pcRef.current = pc;
-    
-    // Add local stream
-    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-    
+
+    localStream.getTracks().forEach((track) =>{
+      pc.addTrack(track, localStream)
+    });
+
     // Handle remote stream
     pc.ontrack = (event) => {
       console.log('Remote stream received:', event.streams[0]);
@@ -40,6 +48,7 @@ export function useWebRTC(callId: string | null, localStream: MediaStream | unde
     // Handle connection state
     pc.onconnectionstatechange = () => {
       console.log('Connection state:', pc.connectionState);
+      setConnectionState(pc.connectionState);
       setIsConnected(pc.connectionState === 'connected');
     };
     
@@ -91,23 +100,21 @@ export function useWebRTC(callId: string | null, localStream: MediaStream | unde
     const unsubscribe = onSnapshot(callDoc, async (snapshot) => {
       const data = snapshot.data();
       if (!data) return;
-      
+
       // Handle answer (caller only)
       if (isCallerRef.current && data.answer && !pc.remoteDescription) {
         await pc.setRemoteDescription(data.answer);
       }
       
+      // Handle remote mute state
+      const remoteMutedField = isCallerRef.current ? 'calleeMuted' : 'callerMuted';
+      if (data[remoteMutedField] !== undefined) {
+        setRemoteMuted(data[remoteMutedField]);
+      }
+
       // Handle ICE candidates
       const remoteCandidatesField = isCallerRef.current ? 'calleeCandidates' : 'callerCandidates';
       const candidates = data[remoteCandidatesField] || [];
-      for (const candidateData of candidates as ICECanddiateData[]) {
-        if (pc.remoteDescription) {
-          try {
-            await pc.addIceCandidate(candidateData);
-          } catch (error) {
-          }
-        }
-      }
       
       candidates.forEach(async (candidateData: any) => {
         if (pc.remoteDescription) {
@@ -119,14 +126,17 @@ export function useWebRTC(callId: string | null, localStream: MediaStream | unde
         }
       });
     });
-    
+
     unsubscribeRef.current = unsubscribe;
   };
   
   const endCall = () => {
     pcRef.current?.close();
+    pcRef.current = null;
     unsubscribeRef.current?.();
+    unsubscribeRef.current = null;
     setIsConnected(false);
+    setConnectionState('new');
     setRemoteStream(null);
   };
   
@@ -135,5 +145,11 @@ export function useWebRTC(callId: string | null, localStream: MediaStream | unde
     return () => endCall();
   }, [callId]);
   
-  return { startCall, endCall, isConnected, remoteStream };
+  const updateMuteState = async (muted: boolean) => {
+    if (!callId) return;
+    const field = isCallerRef.current ? 'callerMuted' : 'calleeMuted';
+    await updateDoc(doc(db, 'calls', callId), { [field]: muted });
+  };
+
+  return { startCall, endCall, isConnected, connectionState, remoteStream, remoteMuted, updateMuteState };
 }

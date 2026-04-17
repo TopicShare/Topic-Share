@@ -2,116 +2,99 @@ import { useState, useEffect, useRef } from "react";
 import { useMediaAccess } from "../hooks/useMediaAccess";
 import { useCallRoom } from "../hooks/useCallRoom";
 import { useWebRTC } from "../hooks/useWebRTC";
-import { Header } from "./Header";
+import { Center, Card, Stack, Title, Divider, Button, Text, TextInput } from "@mantine/core";
+import { useForm } from "@mantine/form";
+import { useNavigate } from "react-router";
 
 export function AudioCall() {
-  const [joinId, setJoinId] = useState("");
-  const { localStream, openMediaDevices } = useMediaAccess();
-  const { callId, createCallRoom, joinCallRoom } = useCallRoom();
-  
-  const { startCall, endCall, isConnected, remoteStream } = useWebRTC(callId, localStream);
-  
-  // Auto-play remote audio
-  const audioRef = useRef<HTMLAudioElement>(null);
-  useEffect(() => {
-    if (audioRef.current && remoteStream) {
-      audioRef.current.srcObject = remoteStream;
-      audioRef.current.play();
-    }
-  }, [remoteStream]);
+  const { callId, createCallRoom, joinCallRoom, endCall } = useCallRoom();
+  const navigate = useNavigate();
+  const [ checking, setChecking ] = useState(false);
 
   const handleCreateRoom = async () => {
-    if (!localStream) await openMediaDevices();
     await createCallRoom();
-    await startCall();
   };
 
-  const handleJoinRoom = async () => {
-    if (!localStream) await openMediaDevices();
-    const success = await joinCallRoom(joinId);
-    if (success) await startCall();
+  const form = useForm({
+    initialValues: { roomId: "" },
+    validate: {
+      roomId: (value) => value.length !== 6 ? "Room ID must be 6 characters": null
+    }
+  });
+
+  // TODO: Add name input for user's display name as a form
+  // Pass name as a query param when nagivating to /callRoom/:callId (e.g. ?name=John)
+  // Store name in local state
+
+  // TODO: When room is created, do not automatically redirect to call room
+
+  // Navigate when callId is set (after room creation)
+  useEffect(() => {
+    if (callId) {
+      navigate(`/callRoom/${callId}`);
+    }
+  }, [callId, navigate]);
+
+  const handleJoinRoom = async (values: { roomId: string}) => {
+    setChecking(true);
+    const success = await joinCallRoom(values.roomId);
+    setChecking(false);
+    if (success) {
+      navigate(`/callRoom/${values.roomId}`);
+    } else {
+      form.setFieldError("roomId", "Room not found");
+    }
   };
 
-  return (
-    <div className="flex flex-col gap-4 max-w-md mx-auto p-6">
-      <Header />
+return (
+  <Center className="min-h-screen" style={{ background: "#1e2535" }}>
+    <Card shadow="sm" padding="xl" radius="lg" w={{ base: "90%", sm: 380 }}
+      style={{
+        background: "#1e2535", border: "none",
+        boxShadow: "6px 6px 16px rgba(0,0,0,0.5), -4px -4px 12px rgba(255,255,255,0.06)"
+      }}
+      >
+      <form onSubmit={form.onSubmit(handleJoinRoom)}>
+        <Stack gap="md">
 
-      {/* Status */}
-      <div className="text-center bg-gray-800 rounded p-4">
-        <p>Status: {isConnected ? "Connected!" : "Waiting..."}</p>
-        {callId && (
-          <button 
-            onClick={() => navigator.clipboard.writeText(callId)}
-            className="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-sm mt-2 transition-colors"
+          {/* Header */}
+          <Title order={2} ta="center">Topic Share</Title>
+          <Text c="dimmed" size="sm" ta="center">
+            Talk anonymously with someone who gets it.
+          </Text>
+
+          {/* Create Room */}
+          <Button
+            onClick={handleCreateRoom}
+            variant="filled"
+            size="sm"
+            radius="lg"
+            fullWidth
           >
-            📋 Copy Room ID: {callId}
-          </button>
-        )}
-      </div>
+            Create New Room
+          </Button>
 
-      {/* Microphone */}
-      <button
-        onClick={openMediaDevices}
-        className={`px-4 py-2 rounded ${
-          localStream ? "bg-green-600" : "bg-blue-600"
-        } text-white`}
-      >
-        {localStream ? "✓ Microphone Ready" : "Enable Microphone"}
-      </button>
+          <Divider label="or" labelPosition="center" />
 
-      {/* Create Room */}
-      <button
-        onClick={handleCreateRoom}
-        disabled={!localStream}
-        className="px-4 py-2 bg-green-600 text-white rounded disabled:bg-gray-500"
-      >
-        Create New Room
-      </button>
+          {/* Join Room */}
+          <TextInput
+            placeholder="Enter Room ID"
+            maxLength={6}
+            {...form.getInputProps("roomId")}
+            onChange={(e) => form.setFieldValue("roomId", e.target.value.toUpperCase())}
+          />
+          <Button
+            type="submit"
+            size="sm"
+            radius="lg"
+            fullWidth
+          >
+            Join Room
+          </Button>
 
-      {/* Join Room */}
-      <div className="space-y-2">
-        <input
-          value={joinId}
-          onChange={(e) => setJoinId(e.target.value.toUpperCase())}
-          placeholder="Enter Room ID"
-          maxLength={6}
-          className="w-full px-3 py-2 bg-gray-800 rounded"
-        />
-        <button
-          onClick={handleJoinRoom}
-          disabled={!localStream || !joinId.trim()}
-          className="w-full px-4 py-2 bg-purple-600 text-white rounded disabled:bg-gray-500"
-        >
-          Join Room
-        </button>
-      </div>
-
-      {/* Start Call (for room creator) */}
-      {callId && !isConnected && (
-        <button
-          onClick={startCall}
-          className="px-4 py-2 bg-orange-600 text-white rounded"
-        >
-          Start Call
-        </button>
-      )}
-
-      {/* End Call */}
-      {isConnected && (
-        <button
-          onClick={endCall}
-          className="px-4 py-2 bg-red-600 text-white rounded"
-        >
-          End Call
-        </button>
-      )}
-
-      {/* Hidden audio element for remote stream */}
-      <audio ref={audioRef} autoPlay playsInline className="hidden" />
-      
-      {remoteStream && (
-        <p className="text-green-400 text-center">Remote Audio Playing</p>
-      )}
-    </div>
-  );
+        </Stack>
+      </form>
+    </Card>
+  </Center>
+);
 }
