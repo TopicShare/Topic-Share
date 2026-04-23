@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useWebRTC } from "../hooks/useWebRTC";
 import { useMediaAccess } from "../hooks/useMediaAccess";
+import { useVoiceActivity } from "../hooks/useVoiceActivity";
 import { useParams, useSearchParams, useNavigate } from "react-router";
 import {
   Center,
@@ -15,7 +16,7 @@ import {
 } from "@mantine/core";
 import { User, Mic, MicOff, PhoneOff } from "lucide-react";
 
-function UserTile({ name, muted = false }: { name: string; muted?: boolean }) {
+function UserTile({ name, muted = false, speaking = false }: { name: string; muted?: boolean; speaking?: boolean }) {
   return (
     <Stack align="center" gap="sm">
       <Box style={{ position: "relative", display: "inline-flex" }}>
@@ -28,6 +29,9 @@ function UserTile({ name, muted = false }: { name: string; muted?: boolean }) {
             alignItems: "center",
             justifyContent: "center",
             background: "var(--mantine-color-dark-5)",
+            outline: speaking ? "3px solid #40c057" : "3px solid transparent",
+            boxShadow: speaking ? "0 0 12px #40c057aa" : undefined,
+            transition: "outline 0.1s ease, box-shadow 0.1s ease",
           }}
         >
           <User size={44} strokeWidth={1.5} />
@@ -69,6 +73,9 @@ export function CallRoom() {
     callId ?? null,
     localStream,
   );
+
+  const localSpeaking = useVoiceActivity(isMuted ? null : localStream);
+  const remoteSpeaking = useVoiceActivity(remoteStream);
 
   useEffect(() => {
     openMediaDevices();
@@ -130,8 +137,8 @@ export function CallRoom() {
 
         {isConnected && (
           <Group gap={48} justify="center" align="center" wrap="wrap">
-            <UserTile name={localName} muted={isMuted} />
-            <UserTile name="Guest" muted={remoteMuted} />
+            <UserTile name={localName} muted={isMuted} speaking={localSpeaking} />
+            <UserTile name="Guest" muted={remoteMuted} speaking={remoteSpeaking} />
           </Group>
         )}
 
